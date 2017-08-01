@@ -191,14 +191,32 @@ public class MineSweeper{
 
 	// selects specified amount of tiles to be bombs
 	public static void plantBombs(int amount, int click){
+		
+		int x = click % rows;
+		int y = click / rows;
+		
+		int maxX = x + 2;
+		int minX = x - 2;
+		int maxY = y + 2;
+		int minY = y - 2;
+		
+		System.out.println(maxX);
+		System.out.println(minX);
+		System.out.println(maxY);
+		System.out.println(minY);
+		
 
 		// loop until desired number is achieved
 		for (int i = 0; i < amount; i++){
-			int possibleLocation = ran.nextInt(tiles);
+			
+			int newSpot = ran.nextInt(tiles);
+			
+			int newX = newSpot % rows;
+			int newY = newSpot / rows;
 
 			// if tile is not already taken, set tile to be bomb, otherwise reloop
-			if(grid[possibleLocation] != -1 && possibleLocation != click){
-				grid[possibleLocation] = -1;
+			if(grid[newSpot] != -1 && (newX > maxX || newX < minX) && (newY > maxY || newY < minY)){
+				grid[newSpot] = -1;
 			}
 			else{
 				i--;
