@@ -1,22 +1,30 @@
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.util.Random;
 import javax.swing.AbstractButton;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.Timer;
+import javax.swing.border.EmptyBorder;
 
 public class MineSweeper{
 
 
-	static int tiles = 300;
+	static int tiles = 600;
 	static int grid[] = new int[tiles];
 	static boolean flags[] = new boolean[tiles];
 	static boolean discovered[] = new boolean[tiles];
@@ -24,13 +32,17 @@ public class MineSweeper{
 	static int[] xMod = {0, 1, 1, 1, 0, -1, -1, -1};
 	static int[] yMod = {1, 1, 0, -1, -1, -1, 0, 1};
 	static JFrame frame;
-	static JPanel panel;
+	static JPanel board, display;
+	static JLabel time, remaining, bombs;
+	static Font tile, text;
 	static Random ran;
 	static boolean gameOver = false;
 	static boolean boardGenerated = false;
 	static int rows, cols;
 	static int buttonSize = 40;
-	static int bombAmount = 50;
+	static int bombAmount = 2;
+	static Timer timer;
+	static int timeCount = 0;
 
 	// possible label colours (1 is blue, 2 is green ect.)
 	static Color[] label = {new Color(0x0100FE), new Color(0x017F01), new Color(0x0FE0000), new Color(0x010080), new Color(0x810102), new Color(0x008081), new Color(0x000000), new Color(0x808080)};
@@ -38,10 +50,8 @@ public class MineSweeper{
 
 	public static void initialize(){
 
-		// rows = (int)Math.sqrt(tiles);
-		// cols = (int)Math.sqrt(tiles);
-		rows = 15;
-		cols = 20;
+		rows = 20;
+		cols = 30;
 
 		if(rows * cols != tiles){
 			System.out.println("Error Invalid Number of Tiles");
@@ -50,32 +60,64 @@ public class MineSweeper{
 		// initialize objects
 		ran = new Random();
 		frame = new JFrame("Tatti Sweeper");
-		panel = new JPanel();
+		board = new JPanel();
+		display = new JPanel();
+
+		// fonts
+		tile = new Font("verdana", Font.BOLD, 18);
+		text = new Font("verdana", Font.PLAIN, 14);
+
+		// setup labels
+		time = new JLabel("Time Passed: 0:00");
+		time.setHorizontalAlignment(JLabel.CENTER);
+		time.setFont(text);
+
+		remaining = new JLabel("Tiles Remaining: ");
+		remaining.setHorizontalAlignment(JLabel.CENTER);
+		remaining.setFont(text);
+
+		bombs = new JLabel("Bombs Remaining: ");
+		bombs.setHorizontalAlignment(JLabel.CENTER);
+		bombs.setFont(text);
+
+		display.add(time);
+		display.add(Box.createRigidArea(new Dimension(buttonSize * cols / 10,0)));
+		display.add(remaining);
+		display.add(Box.createRigidArea(new Dimension(buttonSize * cols / 10,0)));
+		display.add(bombs);
+		display.setBorder(new EmptyBorder(10, 0, 10, 0));
+		display.setLayout(new BoxLayout(display, BoxLayout.X_AXIS));
+		//display.setLayout(new FlowLayout(FlowLayout.CENTER, buttonSize * cols / 10, 0));
+
+		// setup JFrame
+		frame.getContentPane().add(display);
+		frame.getContentPane().add(board);
+		frame.setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setResizable(true);
+		frame.setSize(buttonSize * cols, buttonSize * rows);
+		frame.setLocationRelativeTo(null);
 
 		// create and add buttons to grid
 		createButtons();
 
 		// set default values
 		clearBoard();
-
-		// setup JFrame
-		frame.getContentPane().add(panel);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setResizable(true);
-		frame.setSize(buttonSize * cols, buttonSize * rows);
-		frame.setLocationRelativeTo(null);
 	}
-	
+
 	public static void clearBoard(){
+
 		// populate arrays
-				for (int i = 0; i < grid.length; i++){
-					buttons[i].setEnabled(true);
-					buttons[i].setText("");
-					grid[i] = 0;
-					flags[i] = false;
-					discovered[i] = false;
-				}
-				gameOver = false;
+		for (int i = 0; i < grid.length; i++){
+			buttons[i].setEnabled(true);
+			buttons[i].setText("");
+			grid[i] = 0;
+			flags[i] = false;
+			discovered[i] = false;
+		}
+		timeCount = 0;
+		time.setText("Time Passed: 0:00");
+		gameOver = false;
 	}
 
 	private static void generateBoard(int click){
@@ -91,7 +133,7 @@ public class MineSweeper{
 		for (int i = 0; i < buttons.length; i++){
 
 			buttons[i] = new JButton();
-			buttons[i].setFont(new Font("verdana", Font.BOLD, 18));
+			buttons[i].setFont(tile);
 			buttons[i].setMargin(new Insets(0, 0, 0, 0));
 			buttons[i].setPreferredSize(new Dimension(buttonSize, buttonSize));
 			buttons[i].setMaximumSize(new Dimension(buttonSize, buttonSize));
@@ -103,10 +145,14 @@ public class MineSweeper{
 					int button = Integer.parseInt(((AbstractButton)e.getSource()).getActionCommand());
 
 					if(!boardGenerated && e.getButton() != MouseEvent.BUTTON3){
+						
+						startTimer();
+						
+						// generate board around first click
 						generateBoard(button);
 						sweep(button);
 					}
-					else if(!gameOver){
+					else{
 						// seperate right click flags and left click sweeps
 						if(e.getButton() == MouseEvent.BUTTON3){
 							// toggles the flag at requested button
@@ -118,14 +164,49 @@ public class MineSweeper{
 						}
 					}
 				}
+
+				private void startTimer(){
+
+					timer = new Timer(1000, new ActionListener(){
+
+						@Override
+						public void actionPerformed(ActionEvent e){
+
+							timeCount++;
+							String text = "";
+							String secText = "";
+
+							int min = timeCount / 60;
+							int sec = timeCount % 60;
+
+							if(sec < 10){
+								secText = "0" + Integer.toString(sec);
+							}
+							else{
+								secText = Integer.toString(sec);
+							}
+
+							if(min > 0){
+								text = min + ":" + secText;
+							}
+							else{
+								text = "0:" + secText;
+							}
+
+							time.setText("Time Passed: " + text);
+						}
+					});
+					timer.start();
+
+				}
 			});
 
 			// add buttons to JFrame
-			panel.add(buttons[i]);
+			board.add(buttons[i]);
 		}
 
 		// create grid
-		panel.setLayout(new GridLayout(rows, cols));
+		board.setLayout(new GridLayout(rows, cols));
 
 		// display the window
 		frame.pack();
@@ -166,6 +247,25 @@ public class MineSweeper{
 				}
 			}
 		}
+
+		int bombsLeft = bombAmount;
+		int tilesLeft = tiles;
+
+		for (int i = 0; i < tiles; i++){
+			if(flags[i]){
+				bombsLeft--;
+				tilesLeft--;
+			}
+			if(discovered[i]){
+				tilesLeft--;
+			}
+		}
+
+		tilesLeft -= bombsLeft;
+
+		remaining.setText("Tiles Remaining: " + tilesLeft);
+		bombs.setText("Bombs Remaining: " + bombsLeft);
+
 	}
 
 	// inverts the boolean flag value
@@ -191,26 +291,25 @@ public class MineSweeper{
 
 	// selects specified amount of tiles to be bombs
 	public static void plantBombs(int amount, int click){
-		
+
+		// find the x and y of click
 		int x = click % rows;
 		int y = click / rows;
-		
-		int maxX = x + 2;
-		int minX = x - 2;
-		int maxY = y + 2;
-		int minY = y - 2;
-		
-		System.out.println(maxX);
-		System.out.println(minX);
-		System.out.println(maxY);
-		System.out.println(minY);
-		
+
+		// half the side length of grace area
+		int range = tiles / 100;
+
+		// defines box around click that no bombs can be in
+		int maxX = x + range;
+		int minX = x - range;
+		int maxY = y + range;
+		int minY = y - range;
 
 		// loop until desired number is achieved
 		for (int i = 0; i < amount; i++){
-			
+
 			int newSpot = ran.nextInt(tiles);
-			
+
 			int newX = newSpot % rows;
 			int newY = newSpot / rows;
 
@@ -314,6 +413,7 @@ public class MineSweeper{
 
 		// on winning
 		if(win){
+			timer.stop();
 			int n = JOptionPane.showConfirmDialog(frame, "Winner Winner Chicken Dinner!\n Play another?", "Congrats!", JOptionPane.YES_NO_OPTION);
 			if(n == 0){
 				boardGenerated = false;
