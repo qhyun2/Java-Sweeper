@@ -1,6 +1,5 @@
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
@@ -19,6 +18,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.Timer;
+import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 
 public class MineSweeper{
@@ -40,7 +40,7 @@ public class MineSweeper{
 	static boolean boardGenerated = false;
 	static int rows, cols;
 	static int buttonSize = 40;
-	static int bombAmount = 2;
+	static int bombAmount = 40;
 	static Timer timer;
 	static int timeCount = 0;
 
@@ -49,6 +49,10 @@ public class MineSweeper{
 
 
 	public static void initialize(){
+
+		try{
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		}catch (Exception e){}
 
 		rows = 20;
 		cols = 30;
@@ -59,7 +63,7 @@ public class MineSweeper{
 
 		// initialize objects
 		ran = new Random();
-		frame = new JFrame("Tatti Sweeper");
+		frame = new JFrame("Java Sweeper");
 		board = new JPanel();
 		display = new JPanel();
 
@@ -81,13 +85,13 @@ public class MineSweeper{
 		bombs.setFont(text);
 
 		display.add(time);
-		display.add(Box.createRigidArea(new Dimension(buttonSize * cols / 10,0)));
+		display.add(Box.createRigidArea(new Dimension(buttonSize * cols / 10, 0)));
 		display.add(remaining);
-		display.add(Box.createRigidArea(new Dimension(buttonSize * cols / 10,0)));
+		display.add(Box.createRigidArea(new Dimension(buttonSize * cols / 10, 0)));
 		display.add(bombs);
 		display.setBorder(new EmptyBorder(10, 0, 10, 0));
 		display.setLayout(new BoxLayout(display, BoxLayout.X_AXIS));
-		//display.setLayout(new FlowLayout(FlowLayout.CENTER, buttonSize * cols / 10, 0));
+		// display.setLayout(new FlowLayout(FlowLayout.CENTER, buttonSize * cols / 10, 0));
 
 		// setup JFrame
 		frame.getContentPane().add(display);
@@ -145,9 +149,9 @@ public class MineSweeper{
 					int button = Integer.parseInt(((AbstractButton)e.getSource()).getActionCommand());
 
 					if(!boardGenerated && e.getButton() != MouseEvent.BUTTON3){
-						
+
 						startTimer();
-						
+
 						// generate board around first click
 						generateBoard(button);
 						sweep(button);
