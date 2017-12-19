@@ -168,41 +168,6 @@ public class MineSweeper{
 						}
 					}
 				}
-
-				private void startTimer(){
-
-					timer = new Timer(1000, new ActionListener(){
-
-						@Override
-						public void actionPerformed(ActionEvent e){
-
-							timeCount++;
-							String text = "";
-							String secText = "";
-
-							int min = timeCount / 60;
-							int sec = timeCount % 60;
-
-							if(sec < 10){
-								secText = "0" + Integer.toString(sec);
-							}
-							else{
-								secText = Integer.toString(sec);
-							}
-
-							if(min > 0){
-								text = min + ":" + secText;
-							}
-							else{
-								text = "0:" + secText;
-							}
-
-							time.setText("Time Passed: " + text);
-						}
-					});
-					timer.start();
-
-				}
 			});
 
 			// add buttons to JFrame
@@ -215,6 +180,41 @@ public class MineSweeper{
 		// display the window
 		frame.pack();
 		frame.setVisible(true);
+	}
+	
+	public static void startTimer(){
+
+		timer = new Timer(1000, new ActionListener(){
+
+			@Override
+			public void actionPerformed(ActionEvent e){
+
+				timeCount++;
+				String text = "";
+				String secText = "";
+
+				int min = timeCount / 60;
+				int sec = timeCount % 60;
+
+				if(sec < 10){
+					secText = "0" + Integer.toString(sec);
+				}
+				else{
+					secText = Integer.toString(sec);
+				}
+
+				if(min > 0){
+					text = min + ":" + secText;
+				}
+				else{
+					text = "0:" + secText;
+				}
+
+				time.setText("Time Passed: " + text);
+			}
+		});
+		timer.start();
+
 	}
 
 	public static void updateButtonLabels(){
